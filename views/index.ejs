@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+ <html lang="pt-br">
+ <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Sistema de Ponto</title>
+     <style>
+         body {
+             font-family: 'Roboto', sans-serif;
+             background-color: #f0f0f0;
+             margin: 0;
+             padding: 20px;
+             text-align: center;
+         }
+ 
+         h1 {
+             color: #333;
+             margin-bottom: 20px;
+         }
+ 
+         .container {
+             max-width: 800px;
+             margin: 0 auto;
+             padding: 20px;
+             background-color: #fff;
+             border-radius: 8px;
+             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+         }
+ 
+         .form-group {
+             margin-bottom: 15px;
+         }
+ 
+         label {
+             display: block;
+             margin-bottom: 5px;
+             font-weight: bold;
+         }
+ 
+         input[type="text"], input[type="email"], input[type="password"], input[type="date"], input[type="time"], select {
+             width: 100%;
+             padding: 10px;
+             border: 1px solid #ccc;
+             border-radius: 5px;
+         }
+ 
+         button {
+             padding: 10px 20px;
+             font-size: 16px;
+             border: none;
+             border-radius: 5px;
+             cursor: pointer;
+             margin-top: 10px;
+             transition: background-color 0.3s;
+         }
+ 
+         .btn-primary {
+             background-color: #007BFF;
+             color: white;
+         }
+ 
+         .btn-success {
+             background-color: #28A745;
+             color: white;
+         }
+ 
+         .btn-secondary {
+             background-color: #6C757D;
+             color: white;
+         }
+ 
+         button:hover {
+             opacity: 0.9;
+         }
+ 
+         .message {
+             display: none;
+             margin: 20px 0;
+             padding: 10px;
+             border-radius: 5px;
+         }
+ 
+         .message.success {
+             background-color: #28A745;
+             color: white;
+         }
+ 
+         .message.error {
+             background-color: #DC3545;
+             color: white;
+         }
+         table {
+            width: 100%;
+            border-collapse: collapse; 
+          }
+        
+          table, th, td {
+            border: 1px solid black; 
+          }
+        
+          th, td {
+            padding: 10px;
+            text-align: left;            
+          }
+          .saldo-positivo {
+            color: blue; 
+        }
+        
+        .saldo-negativo {
+            color: red;  
+        }
+ 
+         @media (max-width: 768px) {
+             button {
+                 width: 100%;
+             }
+         }
+         
+         .ed-srec{
+            background-color: #DC3545;
+            color: #f0f0f0;
+         }
+         .lista{            
+            text-align: left;
+            width: 60%;
+            margin: auto;
+         }
+         .bntgeral{
+            width: 250px;
+         }
+
+         /* ---- Relatório mensal ---- */
+         .tabela-scroll {
+            overflow-x: auto;
+            margin-bottom: 10px;
+         }
+         #tabelaRelatorio, #tabelaNoturno {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+         }
+         #tabelaRelatorio th, #tabelaNoturno th {
+            background-color: #343a40;
+            color: #fff;
+            white-space: nowrap;
+         }
+         #tabelaRelatorio td, #tabelaNoturno td,
+         #tabelaRelatorio th, #tabelaNoturno th {
+            padding: 6px 8px;
+            white-space: nowrap;
+         }
+         .btn-mini {
+            padding: 3px 8px;
+            font-size: 11px;
+            margin: 0;
+            background-color: #6C757D;
+            color: #fff;
+            width: auto;
+         }
+         .resumo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 8px;
+            margin: 15px 0;
+            text-align: left;
+         }
+         .resumo-item {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 8px 10px;
+            background-color: #fafafa;
+            display: flex;
+            flex-direction: column;
+         }
+         .resumo-rotulo {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #666;
+            letter-spacing: .3px;
+         }
+         .resumo-valor {
+            font-size: 18px;
+            font-weight: bold;
+         }
+         .nota-noturno {
+            font-size: 12px;
+            color: #555;
+            text-align: left;
+            margin: 4px 0 10px;
+         }
+         @media (max-width: 768px) {
+            .btn-mini { width: auto; }
+         }
+         @media print {
+            .bntgeral, .btn-mini, #relatorioForm, #loginDiv, .buttons, .ed-srec { display: none !important; }
+         }
+     </style>
+ </head>
+ <body>
+     <div class="container">
+         <h1>Bata Seu Ponto</h1>
+         <div id="messageBox" class="message"></div> <!-- Caixa de mensagens -->
+ 
+         <!-- Campo para escolher o funcionário -->
+         <form id="pontoForm">
+             <div class="form-group">
+                 <label for="funcionario_id">Selecione Seu Nome:</label>
+                 <select name="funcionario_id" id="funcionario_id" disabled style="color: black; font-weight: bold;">
+                    <% funcionarios.forEach(funcionario => { %>
+                        <option value="<%= funcionario.id %>" 
+                            <%= funcionario.id == funcionarioLogado ? 'selected' : '' %>>
+                            <%= funcionario.nome %>
+                        </option>
+                    <% }) %>
+                </select>
+             </div>
+ 
+             <div class="buttons">
+                 <button id="logoutButton" type="button" class="btn-primary" onclick="baterPonto('entrada')">Bater Entrada</button>
+                 <button id="logoutButton1" type="button" class="btn-secondary" onclick="baterPonto('saida-almoco')">Saída para Janta</button>
+                 <button id="logoutButton2" type="button" class="btn-secondary" onclick="baterPonto('volta-almoco')">Volta da Janta</button>
+                 <button id="logoutButton3" type="button" class="btn-primary" onclick="baterPonto('saida')">Bater Saída</button>
+             </div>
+         </form><br><br>
+         <div id="loginDiv">
+            <button class="bold" type="button" onclick="verificar()" style="display: none;">Acesso Restrito</button><br><br>            
+            <div id="conteudoProteted" style="display:none;">
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="senha_login">Senha:</label>
+                    <input type="password" value="123" id="senha_login" placeholder="Digite sua senha" required>
+                </div>
+                <input type="hidden" id="funcionario_id_login" value="<%= funcionarioLogado %>">
+                <button type="button" id="btnLogin" onclick="verificarSenha()">Entrar</button>
+            </form>
+            </div>
+        </div>
+        <div id="conteudoProtegido" style="display:none;">
+            <button class="ed-srec" onclick="fecharSessao()" style="display: none;">Fechar Sessão</button><br><br>
+
+
+          <button class="bntgeral" id="btncadastraar">Cadastrar Novo Funcionário</button><br><br>
+<div id="btncadastraarDiv" style="display: none;">
+
+         <h2>Cadastrar Novo Funcionário</h2>
+         <form id="cadastroFuncionarioForm">
+             <div class="form-group">
+                 <input type="text" name="id" placeholder="Código" required>
+             </div>
+             <div class="form-group">
+                 <input type="text" name="nome" placeholder="Nome" required>
+             </div>
+             <div class="form-group">
+                 <input type="email" name="email" placeholder="Email" required>
+             </div>
+             <div class="form-group">
+                 <input type="text" name="dia_folga" placeholder="dia_folga" required>
+             </div>
+             <div class="form-group">
+                 <input type="password" name="senha" placeholder="Senha" required>
+             </div>
+             <button type="button" class="btn-success" onclick="cadastrarFuncionario()">Cadastrar</button>
+         </form>
+</div>
+
+
+
+
+<button class="bntgeral" id="horastrab">Gerar Relatório de Horas Trabalhadas</button><br><br>
+<div id="btncadastraarDivhoras" style="display: none;">
+
+         <h2>Gerar Relatório do Mês</h2>
+<form id="relatorioForm" onsubmit="return false;">
+    <div class="form-group">
+        <label for="funcionario_id_relatorio">Funcionário:</label>
+        <select name="funcionario_id" id="funcionario_id_relatorio">
+            <% funcionarios.forEach(funcionario => { %>
+                <option value="<%= funcionario.id %>"><%= funcionario.nome %></option>
+            <% }) %>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="mes_relatorio">Mês de referência:</label>
+        <input type="month" id="mes_relatorio">
+    </div>
+    <div class="form-group">
+        <label for="meta_horas">Carga horária do mês (horas):</label>
+        <input type="number" id="meta_horas" value="176" min="1" step="1">
+    </div>
+
+    <button type="button" class="btn-success" onclick="gerarRelatorioDoMes()">Gerar Relatório do Mês</button>
+    <button type="button" class="btn-secondary" onclick="alternarPeriodoLivre()" id="btnPeriodoLivre">Usar período personalizado</button>
+
+    <div id="periodoLivre" style="display: none;">
+        <div class="form-group">
+            <label for="data_inicio">Data Início:</label>
+            <input type="date" id="data_inicio">
+        </div>
+        <div class="form-group">
+            <label for="data_fim">Data Fim:</label>
+            <input type="date" id="data_fim">
+        </div>
+        <button type="button" class="btn-primary" onclick="gerarRelatorio()">Gerar Relatório do Período</button>
+    </div>
+</form>
+
+<div id="relatorioResultado" style="display: none;">
+
+    <h3 id="tituloRelatorio">Relatório</h3>
+
+    <div id="resumoRelatorio" class="resumo-grid"></div>
+
+    <div style="margin: 10px 0;">
+        <button type="button" class="btn-success" onclick="exportarRelatorioExcel()">Baixar Excel formatado</button>
+        <button type="button" class="btn-secondary" onclick="window.print()">Imprimir / PDF</button>
+        <button type="button" class="btn-secondary" onclick="exportarRelatorioParaCSV()">CSV simples</button>
+    </div>
+
+    <div class="tabela-scroll">
+    <table id="tabelaRelatorio">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Dia</th>
+                <th>Entrada</th>
+                <th>Saída Janta</th>
+                <th>Volta Janta</th>
+                <th>Saída</th>
+                <th>Trabalhado</th>
+                <th>Saldo do dia</th>
+                <th>Status</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Linhas do relatório serão adicionadas aqui dinamicamente -->
+        </tbody>
+    </table>
+    </div>
+
+    <h3 style="margin-top: 25px;">Adicional Noturno (22:00 às 05:00)</h3>
+    <p class="nota-noturno">
+        As horas da faixa noturna são dobradas: a contagem normal fica no relatório
+        principal acima e a hora adicional aparece aqui.
+    </p>
+    <div class="tabela-scroll">
+    <table id="tabelaNoturno">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Dia</th>
+                <th>Entrada</th>
+                <th>Saída</th>
+                <th>Adicional Noturno</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    </div>
+</div>
+</div>
+
+
+
+<button  class="bntgeral" id="btnEditarpontosr">Editar Registro de Ponto</button><br><br><br>
+<div id="mostrarformeditarponto" style="display: none;">
+       <h2>Editar Registro de Ponto</h2>
+         <form id="editarPontoForm">
+            <div class="form-group">
+                 <label for="funcionario_id_editar">Funcionário:</label>
+                 <select name="funcionario_id" id="funcionario_id_editar">
+                     <% funcionarios.forEach(funcionario => { %>
+                         <option value="<%= funcionario.id %>"><%= funcionario.nome %></option>
+                     <% }) %>
+                 </select>
+             </div>
+ 
+             <!-- <div class="form-group">
+                 <label for="data_editar">Pesquise pela Data:</label>
+                 <input type="date" id="data_editar" required>
+             </div> -->
+             <div class="form-group">
+                <label for="data_editar">Data:</label>
+                <input type="date" id="data_editar" required onchange="buscarRegistroParaEditar()">
+            </div>
+            
+ 
+             <div class="form-group">
+                 <label for="entrada_editar">Entrada:</label>
+                 <input type="time" id="entrada_editar">
+             </div>
+ 
+             <div class="form-group">
+                 <label for="saida_almoco_editar">Saída Almoço:</label>
+                 <input type="time" id="saida_almoco_editar">
+             </div>
+ 
+             <div class="form-group">
+                 <label for="volta_almoco_editar">Volta Almoço:</label>
+                 <input type="time" id="volta_almoco_editar">
+             </div>
+ 
+             <div class="form-group">
+                 <label for="saida_editar">Saída:</label>
+                 <input type="time" id="saida_editar">
+             </div>
+
+             <div class="form-group">
+                 <label for="tipo_dia_editar">Tipo do dia:</label>
+                 <select id="tipo_dia_editar">
+                     <option value="">Normal (calcula pelas batidas)</option>
+                     <option value="FOLGA">Folga (não desconta as 8h)</option>
+                     <option value="FALTA">Falta (desconta 8h)</option>
+                     <option value="ATESTADO">Atestado</option>
+                     <option value="FERIADO">Feriado</option>
+                     <option value="FERIAS">Férias</option>
+                 </select>
+             </div>
+
+             <button type="button" class="btn-success" onclick="editarPonto()">Salvar Alterações</button>
+         </form>
+
+</div>
+
+
+<button class="bntgeral" id="btndelete">Deletar funcionário</button><br><br><br>
+<div id="deletefucDiv" style="display: none;">
+         
+     <form id="deleteForm" method="POST" action="/deletar-funcionario">
+        <label for="funcionario_id">Selecione o funcionário para excluir:</label>
+        <select name="funcionario_id" id="delete">
+            <% funcionarios.forEach(funcionario => { %>
+                <option value="<%= funcionario.id %>"><%= funcionario.nome %></option>
+            <% }) %>
+        </select>
+        <button type="submit" disabled>Excluir Funcionário</button>
+    </form>
+    <div class="lista">
+    <h1>Funcionários Listados</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Nome</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% funcionarios.forEach(funcionario => { %>
+                <tr>
+                    <td><%= funcionario.id %></td>
+                    <td><%= funcionario.nome %></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table> 
+</div>
+    </div>
+</div>
+    
+     <script>
+         function showMessage(message, type = 'success') {
+             const messageBox = document.getElementById('messageBox');
+             messageBox.textContent = message;
+             messageBox.className = `message ${type}`;
+             messageBox.style.display = 'block';
+ 
+             setTimeout(() => {
+                 messageBox.style.display = 'none';
+             }, 3000);
+         }
+ 
+         function baterPonto(tipo) {
+             const form = document.getElementById('pontoForm');
+             const funcionario_id = form.funcionario_id.value;
+ 
+             const data = { funcionario_id };
+ 
+             fetch(`/ponto/${tipo}`, {
+                 method: 'POST',
+                 headers: {
+                     'Content-Type': 'application/json'
+                 },
+                 body: JSON.stringify(data)
+             })
+             .then(response => response.json())
+             .then(result => showMessage(result.message))
+             .catch(error => showMessage(error.message, 'error'));
+         }
+ 
+        // ===================== RELATÓRIO =====================
+        // Todo o cálculo (virada de dia, janta de 30 min, adicional noturno
+        // e meta de horas) vem pronto do servidor em /relatorio.
+
+        let relatorioAtual = null;
+
+        function mesAtualISO() {
+            const hoje = new Date();
+            return hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
+        }
+
+        function formatarHoras(minutos) {
+            const sinal = minutos < 0 ? '-' : '';
+            const total = Math.round(Math.abs(minutos || 0));
+            return sinal + Math.floor(total / 60) + 'h ' + String(total % 60).padStart(2, '0') + 'm';
+        }
+
+        function alternarPeriodoLivre() {
+            const bloco = document.getElementById('periodoLivre');
+            const visivel = bloco.style.display !== 'none';
+            bloco.style.display = visivel ? 'none' : 'block';
+            document.getElementById('btnPeriodoLivre').textContent =
+                visivel ? 'Usar período personalizado' : 'Ocultar período personalizado';
+        }
+
+        // Botão principal: gera o mês inteiro do funcionário selecionado,
+        // já com faltas e folgas.
+        function gerarRelatorioDoMes() {
+            const funcionario_id = document.getElementById('funcionario_id_relatorio').value;
+            const campoMes = document.getElementById('mes_relatorio');
+
+            if (!funcionario_id) {
+                alert('Selecione o funcionário.');
+                return;
+            }
+            if (!campoMes.value) campoMes.value = mesAtualISO();
+
+            buscarRelatorio({ funcionario_id: funcionario_id, mes: campoMes.value });
+        }
+
+        // Período personalizado (mantido para consultas fora do mês fechado)
+        function gerarRelatorio() {
+            const funcionario_id = document.getElementById('funcionario_id_relatorio').value;
+            const data_inicio = document.getElementById('data_inicio').value;
+            const data_fim = document.getElementById('data_fim').value;
+
+            if (!data_inicio || !data_fim) {
+                alert('Informe a data de início e a data de fim.');
+                return;
+            }
+            if (data_inicio > data_fim) {
+                alert('A data de início não pode ser maior que a data de fim.');
+                return;
+            }
+
+            buscarRelatorio({ funcionario_id: funcionario_id, data_inicio: data_inicio, data_fim: data_fim });
+        }
+
+        function buscarRelatorio(filtros) {
+            const meta = document.getElementById('meta_horas').value;
+            const params = new URLSearchParams(filtros);
+            if (meta) params.set('meta_horas', meta);
+
+            fetch('/relatorio?' + params.toString())
+                .then(resposta => resposta.json().then(corpo => {
+                    if (!resposta.ok) throw new Error(corpo.error || 'Erro ao obter o relatório');
+                    return corpo;
+                }))
+                .then(dados => {
+                    relatorioAtual = dados;
+                    exibirRelatorio(dados);
+                })
+                .catch(erro => {
+                    console.error('Erro ao gerar relatório:', erro);
+                    alert(erro.message);
+                });
+        }
+
+        const ROTULO_DIA = {
+            'DOMINGO': 'Dom', 'SEGUNDA-FEIRA': 'Seg', 'TERCA-FEIRA': 'Ter', 'QUARTA-FEIRA': 'Qua',
+            'QUINTA-FEIRA': 'Qui', 'SEXTA-FEIRA': 'Sex', 'SABADO': 'Sáb'
+        };
+
+        const COR_STATUS = {
+            'FOLGA': '#d9f2d9',
+            'FALTA': '#ffe0e0',
+            'ATESTADO': '#e3ecff',
+            'FERIADO': '#e3ecff',
+            'FERIAS': '#e3ecff',
+            'PREVISTO': '#f2f2f2'
+        };
+
+        function exibirRelatorio(dados) {
+            const corpo = document.querySelector('#tabelaRelatorio tbody');
+            const corpoNoturno = document.querySelector('#tabelaNoturno tbody');
+            corpo.innerHTML = '';
+            corpoNoturno.innerHTML = '';
+
+            document.getElementById('relatorioResultado').style.display = 'block';
+            document.getElementById('tituloRelatorio').textContent =
+                'Relatório de ' + dados.funcionario.nome +
+                ' — ' + formatarPeriodo(dados.periodo);
+
+            // ---- Tabela principal, dia a dia ----
+            dados.pontos.forEach(ponto => {
+                const linha = document.createElement('tr');
+                if (COR_STATUS[ponto.status]) linha.style.backgroundColor = COR_STATUS[ponto.status];
+                else if (ponto.inconsistente) linha.style.backgroundColor = '#fff0cc';
+
+                const saldo = ponto.status === 'PREVISTO' ? '--' : formatarHoras(ponto.saldoMinutos);
+                const classeSaldo = ponto.saldoMinutos < 0 ? 'saldo-negativo' : 'saldo-positivo';
+
+                const celulas = [
+                    ponto.dataBR,
+                    ROTULO_DIA[ponto.diaSemana] || ponto.diaSemana,
+                    ponto.entrada,
+                    ponto.saida_almoco,
+                    ponto.volta_almoco,
+                    ponto.saida,
+                    ponto.minutosTrabalhados ? formatarHoras(ponto.minutosTrabalhados) : '--'
+                ];
+
+                celulas.forEach(valor => {
+                    const td = document.createElement('td');
+                    td.textContent = valor;
+                    linha.appendChild(td);
+                });
+
+                const tdSaldo = document.createElement('td');
+                tdSaldo.textContent = saldo;
+                if (ponto.status !== 'PREVISTO') tdSaldo.className = classeSaldo;
+                linha.appendChild(tdSaldo);
+
+                const tdStatus = document.createElement('td');
+                tdStatus.textContent = ponto.status;
+                if (ponto.observacao) tdStatus.title = ponto.observacao;
+                linha.appendChild(tdStatus);
+
+                // Ação: a folga da semana não é fixa, então o dia que caiu como
+                // FALTA pode ser convertido em FOLGA (e a folga não vale -8h).
+                const tdAcao = document.createElement('td');
+                if (ponto.status !== 'PREVISTO') {
+                    const botao = document.createElement('button');
+                    botao.type = 'button';
+                    botao.className = 'btn-mini';
+                    if (ponto.tipoManual) {
+                        botao.textContent = 'Desfazer';
+                        botao.onclick = () => marcarTipoDia(ponto.data, null);
+                    } else {
+                        botao.textContent = 'Marcar folga';
+                        botao.onclick = () => marcarTipoDia(ponto.data, 'FOLGA');
+                    }
+                    tdAcao.appendChild(botao);
+                } else {
+                    tdAcao.textContent = '--';
+                }
+                linha.appendChild(tdAcao);
+
+                corpo.appendChild(linha);
+            });
+
+            // ---- Resumo do mês ----
+            const t = dados.totais;
+            const resumo = [
+                ['Total trabalhado', formatarHoras(t.minutosTrabalhados), ''],
+                ['Carga horária do mês', formatarHoras(t.metaMinutos), ''],
+                ['Horas extras', formatarHoras(t.horasExtrasMinutos), t.horasExtrasMinutos > 0 ? 'positivo' : ''],
+                ['Horas devidas', formatarHoras(t.horasDevidasMinutos), t.horasDevidasMinutos > 0 ? 'negativo' : ''],
+                ['Saldo do mês', formatarHoras(t.saldoMinutos), t.saldoMinutos < 0 ? 'negativo' : 'positivo'],
+                ['Soma dos saldos diários', formatarHoras(t.somaSaldosDiarios), t.somaSaldosDiarios < 0 ? 'negativo' : 'positivo'],
+                ['Adicional noturno', formatarHoras(t.minutosNoturnos), ''],
+                ['Dias trabalhados', String(t.diasTrabalhados), ''],
+                ['Faltas', String(t.faltas), t.faltas > 0 ? 'negativo' : ''],
+                ['Folgas', String(t.folgas), ''],
+                ['Dias abonados', String(t.abonados), '']
+            ];
+
+            document.getElementById('resumoRelatorio').innerHTML = resumo.map(item =>
+                '<div class="resumo-item"><span class="resumo-rotulo">' + item[0] + '</span>' +
+                '<span class="resumo-valor ' + (item[2] === 'negativo' ? 'saldo-negativo' : item[2] === 'positivo' ? 'saldo-positivo' : '') + '">' +
+                item[1] + '</span></div>'
+            ).join('');
+
+            // ---- Tabela de adicional noturno ----
+            if (!dados.noturnos.length) {
+                const vazia = document.createElement('tr');
+                vazia.innerHTML = '<td colspan="5">Nenhuma hora na faixa noturna neste período.</td>';
+                corpoNoturno.appendChild(vazia);
+            } else {
+                dados.noturnos.forEach(n => {
+                    const linha = document.createElement('tr');
+                    [n.dataBR, ROTULO_DIA[n.diaSemana] || n.diaSemana, n.entrada, n.saida, formatarHoras(n.minutosNoturnos)]
+                        .forEach(valor => {
+                            const td = document.createElement('td');
+                            td.textContent = valor;
+                            linha.appendChild(td);
+                        });
+                    corpoNoturno.appendChild(linha);
+                });
+            }
+
+            const totalNoturno = document.createElement('tr');
+            totalNoturno.innerHTML =
+                '<td colspan="4"><strong>Total de adicional noturno</strong></td>' +
+                '<td><strong>' + formatarHoras(t.minutosNoturnos) + '</strong></td>';
+            corpoNoturno.appendChild(totalNoturno);
+
+            const totalComNoturno = document.createElement('tr');
+            totalComNoturno.innerHTML =
+                '<td colspan="4"><strong>Total trabalhado + adicional noturno</strong></td>' +
+                '<td><strong>' + formatarHoras(t.minutosComAdicionalNoturno) + '</strong></td>';
+            corpoNoturno.appendChild(totalComNoturno);
+        }
+
+        function formatarPeriodo(periodo) {
+            if (periodo.mes) {
+                const [ano, mes] = periodo.mes.split('-');
+                const nomes = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+                               'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+                return nomes[Number(mes) - 1] + '/' + ano;
+            }
+            return periodo.data_inicio.split('-').reverse().join('/') + ' a ' +
+                   periodo.data_fim.split('-').reverse().join('/');
+        }
+
+        // Marca o dia como folga (ou desfaz) e recarrega o relatório
+        function marcarTipoDia(data, tipo) {
+            if (!relatorioAtual) return;
+            const funcionario_id = relatorioAtual.funcionario.id;
+
+            fetch('/ponto/tipo-dia', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ funcionario_id: funcionario_id, data: data, tipo_dia: tipo })
+            })
+                .then(resposta => resposta.json().then(corpo => {
+                    if (!resposta.ok) throw new Error(corpo.error || 'Erro ao marcar o dia');
+                    return corpo;
+                }))
+                .then(corpo => {
+                    showMessage(corpo.message);
+                    const periodo = relatorioAtual.periodo;
+                    buscarRelatorio(periodo.mes
+                        ? { funcionario_id: funcionario_id, mes: periodo.mes }
+                        : { funcionario_id: funcionario_id, data_inicio: periodo.data_inicio, data_fim: periodo.data_fim });
+                })
+                .catch(erro => {
+                    console.error(erro);
+                    alert(erro.message);
+                });
+        }
+
+        // Planilha .xlsx já formatada, montada no servidor com os mesmos
+        // filtros do relatório que está na tela.
+        function exportarRelatorioExcel() {
+            if (!relatorioAtual) {
+                alert('Gere o relatório antes de exportar.');
+                return;
+            }
+
+            const periodo = relatorioAtual.periodo;
+            const params = new URLSearchParams({ funcionario_id: relatorioAtual.funcionario.id });
+            if (periodo.mes) {
+                params.set('mes', periodo.mes);
+            } else {
+                params.set('data_inicio', periodo.data_inicio);
+                params.set('data_fim', periodo.data_fim);
+            }
+            params.set('meta_horas', relatorioAtual.regras.metaHoras);
+
+            window.location.href = '/relatorio/exportar?' + params.toString();
+        }
+
+        function exportarRelatorioParaCSV() {
+            if (!relatorioAtual) {
+                alert('Gere o relatório antes de exportar.');
+                return;
+            }
+
+            const escapar = valor => '"' + String(valor).replace(/"/g, '""') + '"';
+            const linhas = [];
+
+            linhas.push(['Funcionário', relatorioAtual.funcionario.nome].map(escapar).join(';'));
+            linhas.push(['Período', formatarPeriodo(relatorioAtual.periodo)].map(escapar).join(';'));
+            linhas.push('');
+            linhas.push(['Data', 'Dia', 'Entrada', 'Saída Janta', 'Volta Janta', 'Saída',
+                         'Trabalhado', 'Saldo do dia', 'Adicional Noturno', 'Status', 'Observação']
+                        .map(escapar).join(';'));
+
+            relatorioAtual.pontos.forEach(p => {
+                linhas.push([
+                    p.dataBR, p.diaSemana, p.entrada, p.saida_almoco, p.volta_almoco, p.saida,
+                    formatarHoras(p.minutosTrabalhados),
+                    p.status === 'PREVISTO' ? '--' : formatarHoras(p.saldoMinutos),
+                    formatarHoras(p.minutosNoturnos),
+                    p.status, p.observacao || ''
+                ].map(escapar).join(';'));
+            });
+
+            const t = relatorioAtual.totais;
+            linhas.push('');
+            linhas.push(['RESUMO'].map(escapar).join(';'));
+            [
+                ['Total trabalhado', formatarHoras(t.minutosTrabalhados)],
+                ['Carga horária do mês', formatarHoras(t.metaMinutos)],
+                ['Horas extras', formatarHoras(t.horasExtrasMinutos)],
+                ['Horas devidas', formatarHoras(t.horasDevidasMinutos)],
+                ['Saldo do mês', formatarHoras(t.saldoMinutos)],
+                ['Soma dos saldos diários', formatarHoras(t.somaSaldosDiarios)],
+                ['Adicional noturno (total)', formatarHoras(t.minutosNoturnos)],
+                ['Total + adicional noturno', formatarHoras(t.minutosComAdicionalNoturno)],
+                ['Dias trabalhados', t.diasTrabalhados],
+                ['Faltas', t.faltas],
+                ['Folgas', t.folgas],
+                ['Dias abonados', t.abonados]
+            ].forEach(item => linhas.push(item.map(escapar).join(';')));
+
+            // BOM para o Excel abrir os acentos corretamente
+            const blob = new Blob(['﻿' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'relatorio-' + relatorioAtual.funcionario.id + '-' +
+                (relatorioAtual.periodo.mes || relatorioAtual.periodo.data_inicio) + '.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+         function cadastrarFuncionario() {
+            const form = document.getElementById('cadastroFuncionarioForm');
+            
+            // Cria um objeto com os dados do formulário
+            const data = {
+                id: form.id.value,
+                nome: form.nome.value,
+                email: form.email.value,
+                dia_folga: form.dia_folga.value,
+                senha: form.senha.value
+            };
+        console.log("dados", data);
+            fetch('/funcionarios/cadastrar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.text())
+             .then(result => showMessage(result.message))
+             .catch(error => showMessage(error.message, 'error'));
+             alert("Funcionario cadastrado com sucesso");
+             window.location.reload();
+        }
+         
+ 
+        function editarPonto() {
+            const form = document.getElementById('editarPontoForm');
+            const funcionario_id = form.funcionario_id_editar.value;
+            const data = form.data_editar.value;
+            const entrada = form.entrada_editar.value;
+            const saida_almoco = form.saida_almoco_editar.value;
+            const volta_almoco = form.volta_almoco_editar.value;
+            const saida = form.saida_editar.value;
+            const tipo_dia = form.tipo_dia_editar.value;
+
+            const dados = {
+                funcionario_id,
+                data,
+                entrada,
+                saida_almoco,
+                volta_almoco,
+                saida,
+                tipo_dia
+            };
+
+            fetch(`/ponto/editar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(dados)
+            })
+            .then(response => response.text())
+            .then(result => alert(result), form.reset())             
+            .catch(error => console.error('Erro ao editar ponto:', error));
+        }
+      /*  window.onload = function() {
+            if (localStorage.getItem('autenticado') === 'true') {
+                document.getElementById('loginDiv').style.display = 'none';  // Esconde a tela de login
+               // document.getElementById('conteudoProtegido').style.display = 'block';  // Mostra o conteúdo protegido
+            }
+        }*/
+
+
+
+ async function buscarRegistroParaEditar() {
+            const form = document.getElementById('editarPontoForm');
+            const funcionario_id = form.funcionario_id_editar.value;
+            const data = form.data_editar.value;
+        
+            if (!funcionario_id || !data) {
+                alert('Por favor, selecione um funcionário e uma data');
+                return;
+            }
+        
+            try {
+                const response = await fetch(`/ponto/buscar?funcionario_id=${funcionario_id}&data=${data}`);
+                if (response.ok) {
+                    const registro = await response.json();
+        
+                    // Preenche os campos do formulário com os dados retornados
+                    form.entrada_editar.value = registro.entrada || '';
+                    form.saida_almoco_editar.value = registro.saida_almoco || '';
+                    form.volta_almoco_editar.value = registro.volta_almoco || '';
+                    form.saida_editar.value = registro.saida || '';
+                    form.tipo_dia_editar.value = registro.tipo_dia || '';
+                } else if (response.status === 404) {
+                    // Permitir preenchimento para um novo registro
+                    alert('Registro não encontrado. Selecione o Colaborador e insira os dados ok.');
+                    alert('Por favor Confirme o nome do colaborador antes de salvar');
+                   // form.reset(); // Reseta os campos do formulário para inserção
+                    form.data_editar.value = data; // Mantém a data preenchida para inserção
+                } else {
+                    throw new Error('Erro ao buscar registro');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar registro:', error);
+                alert('Não foi possível buscar o registro. Tente novamente mais tarde.');
+            }
+        }
+
+
+
+
+        function verificar() {
+            var conteudo = document.getElementById('conteudoProteted');
+            
+            // Alterna a visibilidade
+            if (conteudo.style.display === 'none') {
+                conteudo.style.display = 'block';  // Mostra o conteúdo
+            } else {
+                conteudo.style.display = 'none';   // Esconde o conteúdo
+            }
+        }
+     
+        function verificar() {
+            var conteudo = document.getElementById('conteudoProteted');
+            if (conteudo.style.display === 'none') {
+                conteudo.style.display = 'block';
+            } else {
+                conteudo.style.display = 'none';
+            }
+        }
+    
+        function verificarSenha() {
+            const senha = document.getElementById('senha_login').value;
+            const funcionario_id = document.getElementById('funcionario_id_login').value;
+            // Envia a senha para o backend
+            fetch('/verificar-senha', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ senha: senha, funcionario_id: funcionario_id })  // Envia a senha como JSON
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.autenticado) {
+                    // Armazena no Local Storage que o usuário autenticou
+                    localStorage.setItem('autenticado', 'true');
+    
+                    // Esconde a tela de login e mostra o conteúdo protegido
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('conteudoProtegido').style.display = 'block';
+                } else {
+                  //  alert('Senha incorreta!');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao verificar a senha:', error);
+            });
+        }
+        
+        
+    
+        function fecharSessao() {
+            // Remove a autenticação do Local Storage e volta para a tela de login
+            localStorage.removeItem('autenticado');
+            document.getElementById('loginDiv').style.display = 'block';  // Mostra a tela de login
+            document.getElementById('conteudoProtegido').style.display = 'none';  
+            window.location.reload();
+        }
+        
+        
+
+        async function buscarFuncionarios() {
+            try {
+                const response = await fetch('/buscar'); // Faz a requisição para a rota '/buscar'
+                if (!response.ok) {
+                    throw new Error('Erro ao buscar os funcionários');
+                }
+                const funcionarioslista = await response.json(); // Converte a resposta para JSON
+                
+                // Seleciona o elemento <ul> onde os funcionários serão listados
+                const lista = document.getElementById('funcionarios-list');
+                
+                // Limpa a lista antes de adicionar os novos itens
+                lista.innerHTML = '';
+        
+                // Verifique se "funcionarios" tem a estrutura correta
+                funcionarioslista.forEach(funcionario1 => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${funcionario1.id}: ${funcionario1.nome}`;
+                    lista.appendChild(listItem);
+                });
+            } catch (error) {
+                console.error(error);                
+            }
+        }
+
+
+          window.addEventListener("load", function() {
+    // Preenche a senha automaticamente (opcional)
+    document.getElementById("senha_login").value = "123";
+
+    // Aguarda 1 segundo e clica no botão automaticamente
+    setTimeout(() => {
+      document.getElementById("btnLogin").click();
+    }, 100);
+  });
+
+
+  const botao = document.getElementById("btnEditarpontosr");
+  const form = document.getElementById("mostrarformeditarponto");
+
+  botao.addEventListener("click", () => {
+    // alterna entre mostrar e esconder
+    if (form.style.display === "none" || form.style.display === "") {
+      form.style.display = "block"; // mostra o form
+    } else {
+      form.style.display = "none"; // esconde o form
+    }
+  });
+
+
+  const botaos = document.getElementById("btncadastraar");
+  const forms = document.getElementById("btncadastraarDiv");
+
+  botaos.addEventListener("click", () => {
+    // alterna entre mostrar e esconder
+    if (forms.style.display === "none" || forms.style.display === "") {
+      forms.style.display = "block"; // mostra o form
+    } else {
+      forms.style.display = "none"; // esconde o form
+    }
+  });
+  const botaosh = document.getElementById("horastrab");
+  const formsh = document.getElementById("btncadastraarDivhoras");
+
+  botaosh.addEventListener("click", () => {
+    // alterna entre mostrar e esconder
+    if (formsh.style.display === "none" || formsh.style.display === "") {
+      formsh.style.display = "block"; // mostra o form
+      // já deixa o mês corrente selecionado para o relatório do mês
+      const campoMes = document.getElementById("mes_relatorio");
+      if (campoMes && !campoMes.value) campoMes.value = mesAtualISO();
+    } else {
+      formsh.style.display = "none"; // esconde o form
+    }
+  });
+  const botaoshd = document.getElementById("btndelete");
+  const formshd = document.getElementById("deletefucDiv");
+
+  botaoshd.addEventListener("click", () => {
+    // alterna entre mostrar e esconder
+    if (formshd.style.display === "none" || formshd.style.display === "") {
+      formshd.style.display = "block"; // mostra o form
+    } else {
+      formshd.style.display = "none"; // esconde o form
+    }
+  });
+        
+        // Chama a função ao carregar a página
+        window.onload = buscarFuncionarios;
+document.getElementById('logoutButton').addEventListener('click', () => {
+            setTimeout(() => {
+                window.location.href = '/logout';
+            }, 4000); // 3000 ms = 3 segundos        
+        });
+document.getElementById('logoutButton1').addEventListener('click', () => {
+            setTimeout(() => {
+                window.location.href = '/logout';
+            }, 4000); // 3000 ms = 3 segundos        
+        });
+document.getElementById('logoutButton2').addEventListener('click', () => {
+            setTimeout(() => {
+                window.location.href = '/logout';
+            }, 4000); // 3000 ms = 3 segundos        
+        });
+document.getElementById('logoutButton3').addEventListener('click', () => {
+            setTimeout(() => {
+                window.location.href = '/logout';
+            }, 4000); // 3000 ms = 3 segundos        
+        });
+     </script>
+     </div>
+ </body>
+ </html>
