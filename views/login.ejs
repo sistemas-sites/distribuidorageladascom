@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Funcionário</title>
+    <style>
+        /* Estilos gerais */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #loginForm {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        #loginForm .form-group {
+            margin-bottom: 15px;
+        }
+
+        #loginForm label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: block;
+            color: #333;
+        }
+
+        #loginForm input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        #loginForm input:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        /* Mensagem de erro */
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none; /* Esconde a mensagem por padrão */
+        }
+
+        /* Responsividade */
+        @media (max-width: 480px) {
+            #loginForm {
+                padding: 15px;
+            }
+
+            #loginForm input {
+                font-size: 14px;
+            }
+
+            .btn-primary {
+                font-size: 14px;
+            }
+        }
+        .login {
+            background: red;
+            color: white;
+           border-radius: 3px;
+           padding: 5px;
+           text-decoration: none;
+            }
+    </style>
+</head>
+<body>
+   <form id="loginForm">
+    <div class="form-group">
+        <h2>Geladas.com</h2>
+        <div class="error-message" id="errorMessage"></div>
+        <label for="funcionario_id">Insira seu Código:</label>
+        <input type="password" id="funcionario_id" name="funcionario_id" required>
+    </div>
+    <button type="button" class="btn-primary" onclick="realizarLogin()">Login</button>
+</form>
+
+<script>
+async function realizarLogin() {
+    const funcionario_id = document.getElementById('funcionario_id').value;
+    const errorMessage = document.getElementById('errorMessage');
+
+    if (!funcionario_id || isNaN(funcionario_id)) {
+        errorMessage.textContent = 'Por favor, insira um ID válido.';
+        errorMessage.style.display = 'block';
+        return;
+    }
+
+    try {
+        const resposta = await fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ funcionario_id }),
+        });
+
+        const resultado = await resposta.json();
+        if (resposta.status === 200 && resultado.autenticado) {
+            window.location.href = `/index/${funcionario_id}`;
+        } else {
+            errorMessage.textContent = resultado.message || 'Erro no login.';
+            errorMessage.style.display = 'block';
+        }
+    } catch (err) {
+        errorMessage.textContent = 'Erro ao conectar ao servidor.';
+        errorMessage.style.display = 'block';
+    }
+}
+</script>
+</body>
+</html>
